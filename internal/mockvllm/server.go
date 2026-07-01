@@ -7,16 +7,19 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Server struct {
 	podName string
 	params  Params
 	cache   *Cache
+	metrics *metrics
 }
 
 func NewServer(podName string, params Params) *Server {
-	return &Server{podName: podName, params: params, cache: NewCache()}
+	return &Server{podName: podName, params: params, cache: NewCache(), metrics: newMetrics()}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -25,6 +28,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
+	mux.Handle("GET /metrics", promhttp.HandlerFor(s.metrics.registry, promhttp.HandlerOpts{}))
 	return mux
 }
 
@@ -61,6 +65,9 @@ type chatResponse struct {
 }
 
 func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
+	s.metrics.running.Inc()
+	defer s.metrics.running.Dec()
+
 	var req chatRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "bad request: "+err.Error(), http.StatusBadRequest)
@@ -68,13 +75,17 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := s.cache.Process(buildPrompt(req.Messages), s.params)
+	s.metrics.promptTokens.Add(float64(res.TotalTokens))
+	s.metrics.cacheQueries.Add(float64(res.TotalTokens))
+	s.metrics.cacheHits.Add(float64(res.CachedTokens))
+	s.metrics.ttft.Observe(res.TTFT.Seconds())
 
-	// Simulate time-to-first-token; bail if the client goes away.
 	select {
 	case <-time.After(res.TTFT):
 	case <-r.Context().Done():
 		return
 	}
+	s.metrics.genTokens.Add(1)
 
 	resp := chatResponse{
 		ID:      "chatcmpl-mock-" + strconv.FormatInt(time.Now().UnixNano(), 10),

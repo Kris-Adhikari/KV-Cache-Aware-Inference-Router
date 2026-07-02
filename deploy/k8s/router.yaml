@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: router
+  labels:
+    app: router
+spec:
+  selector:
+    app: router
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: router
+  template:
+    metadata:
+      labels:
+        app: router
+    spec:
+      containers:
+        - name: router
+          image: kv-router/router:dev
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-addr"
+            - ":8080"
+            - "-strategy"
+            - "cache-aware"
+            - "-backends"
+            - "mock-0=http://mock-0.mock:8000,mock-1=http://mock-1.mock:8000,mock-2=http://mock-2.mock:8000"
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 1
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10

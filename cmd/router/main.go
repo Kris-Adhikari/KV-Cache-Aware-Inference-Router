@@ -36,7 +36,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	httpSrv := &http.Server{Addr: *addr, Handler: proxy.New(r)}
+	httpSrv := &http.Server{Addr: *addr, Handler: routerHandler(r)}
 
 	go func() {
 		log.Printf("router listening on %s strategy=%s backends=%d", *addr, *strategy, len(backends))
@@ -55,6 +55,15 @@ func main() {
 	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("shutdown: %v", err)
 	}
+}
+
+func routerHandler(r router.Router) http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	mux.Handle("/", proxy.New(r))
+	return mux
 }
 
 func buildRouter(strategy string, replicas int, backends []*router.Backend) (router.Router, error) {

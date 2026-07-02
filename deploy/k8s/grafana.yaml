@@ -65,7 +65,9 @@ data:
             { "refId": "A", "datasource": { "type": "prometheus", "uid": "prometheus" },
               "expr": "histogram_quantile(0.50, sum(rate(vllm:time_to_first_token_seconds_bucket[5m])) by (le))", "legendFormat": "p50" },
             { "refId": "B", "datasource": { "type": "prometheus", "uid": "prometheus" },
-              "expr": "histogram_quantile(0.95, sum(rate(vllm:time_to_first_token_seconds_bucket[5m])) by (le))", "legendFormat": "p95" }
+              "expr": "histogram_quantile(0.95, sum(rate(vllm:time_to_first_token_seconds_bucket[5m])) by (le))", "legendFormat": "p95" },
+            { "refId": "C", "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.99, sum(rate(vllm:time_to_first_token_seconds_bucket[5m])) by (le))", "legendFormat": "p99" }
           ]
         },
         {

@@ -33,6 +33,12 @@ func NewCache() *Cache {
 	return &Cache{root: &cacheNode{children: map[string]*cacheNode{}}}
 }
 
+func (c *Cache) Reset() {
+	c.mu.Lock()
+	c.root = &cacheNode{children: map[string]*cacheNode{}}
+	c.mu.Unlock()
+}
+
 func (c *Cache) Process(prompt string, p Params) Result {
 	tokens := tokenize(prompt)
 

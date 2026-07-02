@@ -2,9 +2,11 @@ package proxy
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 
 	"github.com/Kris-Adhikari/KV-Aware-Inference-Router/internal/router"
 )
@@ -25,6 +27,12 @@ func New(r router.Router) *Proxy {
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			pr.SetURL(pr.In.Context().Value(targetKey).(*url.URL))
 			pr.SetXForwarded()
+		},
+		Transport: &http.Transport{
+			DialContext:         (&net.Dialer{Timeout: 2 * time.Second}).DialContext,
+			MaxIdleConns:        200,
+			MaxIdleConnsPerHost: 100,
+			IdleConnTimeout:     90 * time.Second,
 		},
 	}
 	return p

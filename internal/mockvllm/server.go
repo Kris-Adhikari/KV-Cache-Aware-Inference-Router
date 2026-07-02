@@ -28,6 +28,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
+	mux.HandleFunc("POST /reset", func(w http.ResponseWriter, _ *http.Request) {
+		s.cache.Reset()
+		w.WriteHeader(http.StatusNoContent)
+	})
 	mux.Handle("GET /metrics", promhttp.HandlerFor(s.metrics.registry, promhttp.HandlerOpts{}))
 	return mux
 }

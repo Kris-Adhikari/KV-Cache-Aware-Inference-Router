@@ -121,7 +121,7 @@ func doRequest(client *http.Client, cfg config, session, content string) result 
 
 type stats struct {
 	count, hits, errors int
-	avg, p50, p95       time.Duration
+	avg, p50, p95, p99  time.Duration
 }
 
 func summarize(rs []result) stats {
@@ -145,6 +145,7 @@ func summarize(rs []result) stats {
 	s.avg = sum / time.Duration(len(lats))
 	s.p50 = percentile(lats, 50)
 	s.p95 = percentile(lats, 95)
+	s.p99 = percentile(lats, 99)
 	return s
 }
 
@@ -169,6 +170,7 @@ func printReport(cfg config, rs []result, wall time.Duration) {
 	fmt.Printf("TTFT avg:  %v\n", s.avg)
 	fmt.Printf("TTFT p50:  %v\n", s.p50)
 	fmt.Printf("TTFT p95:  %v\n", s.p95)
+	fmt.Printf("TTFT p99:  %v\n", s.p99)
 	if wall > 0 {
 		fmt.Printf("wall:      %v  (%.0f req/s)\n", wall, float64(s.count)/wall.Seconds())
 	}
